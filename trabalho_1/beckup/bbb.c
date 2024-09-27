@@ -7,19 +7,6 @@
 
 #define LBP_VALUES 256
 
-unsigned char calculateLBP(unsigned char *image, int width, int height, int x, int y);
-int readPGMHeader(FILE *inputFile, char *magicNumber, int *width, int *height, int *maxVal);
-int readImageDataP5(FILE *inputFile, unsigned char *imageData, size_t totalPixels);
-int readImageDataP2(FILE *inputFile, unsigned char *imageData, int totalPixels);
-void calculateLBPHistogram(unsigned char *imageData, double *lbpHistogram, int width, int height);
-double calculateEuclideanDistance(double *hist1, double *hist2);
-void processImage(const char *fileName, double *lbpHistogram);
-void listImagesInDirectory(const char *directory, char imageList[][256], int *count);
-void saveLBPHistogramToFile(const char *filename, double *lbpHistogram);
-int loadLBPHistogramFromFile(const char *filename, double *lbpHistogram);
-void saveLBPImage(const char *outputFile, unsigned char *lbpImage, int width, int height);
-void generateLBPImage(const char *inputImageFile, const char *outputFile);
-
 unsigned char calculateLBP(unsigned char *image, int width, int height, int x, int y) {
     int offsets[8][2] = {{-1, -1}, {0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}};
     unsigned char center = image[y * width + x];
@@ -109,6 +96,41 @@ double calculateEuclideanDistance(double *hist1, double *hist2) {
     return sqrt(distance);
 }
 
+void processImage(const char *fileName, double *lbpHistogram) {
+    FILE *inputFile = fopen(fileName, "rb");
+    if (inputFile == NULL) {
+        printf("Erro ao abrir o arquivo %s.\n", fileName);
+        return;
+    }
+
+    char magicNumber[3];
+    int width, height, maxVal;
+
+    if (!readPGMHeader(inputFile, magicNumber, &width, &height, &maxVal)) {
+        fclose(inputFile);
+        return;
+    }
+
+    int totalPixels = width * height;
+    unsigned char *imageData = (unsigned char *)malloc(totalPixels * sizeof(unsigned char));
+    if (!imageData) {
+        printf("Erro ao alocar memória para os dados da imagem.\n");
+        fclose(inputFile);
+        return;
+    }
+
+    int success = (magicNumber[1] == '5') ? readImageDataP5(inputFile, imageData, totalPixels)
+                                          : readImageDataP2(inputFile, imageData, totalPixels);
+
+    if (success) {
+        calculateLBPHistogram(imageData, lbpHistogram, width, height);
+    } else {
+        printf("Erro ao processar a imagem %s.\n", fileName);
+    }
+
+    free(imageData);
+    fclose(inputFile);
+}
 
 void listImagesInDirectory(const char *directory, char imageList[][256], int *count) {
     DIR *dir = opendir(directory);
@@ -148,73 +170,6 @@ void listImagesInDirectory(const char *directory, char imageList[][256], int *co
     closedir(dir);
 }
 
-void saveLBPHistogramToFile(const char *filename, double *lbpHistogram) {
-    FILE *file = fopen(filename, "wb");
-    if (file != NULL) {
-        fwrite(lbpHistogram, sizeof(double), LBP_VALUES, file);
-        fclose(file);
-    } else {
-        printf("Erro ao salvar o histograma LBP em %s.\n", filename);
-    }
-}
-
-int loadLBPHistogramFromFile(const char *filename, double *lbpHistogram) {
-    FILE *file = fopen(filename, "rb");
-    if (file == NULL) {
-        return 0; // Arquivo não encontrado
-    }
-    
-    size_t readCount = fread(lbpHistogram, sizeof(double), LBP_VALUES, file);
-    fclose(file);
-    
-    return readCount == LBP_VALUES; // Retorna 1 se a leitura foi bem-sucedida
-}
-
-void processImage(const char *fileName, double *lbpHistogram) {
-    char lbpFileName[512];
-    snprintf(lbpFileName, sizeof(lbpFileName), "%s.lbp", fileName); // Nome do arquivo LBP
-
-    // Tente carregar o histograma LBP do arquivo
-    if (loadLBPHistogramFromFile(lbpFileName, lbpHistogram)) {
-        return; // Retorna se a leitura for bem-sucedida
-    }
-
-    // Caso contrário, lê a imagem e calcula o histograma LBP
-    FILE *inputFile = fopen(fileName, "rb");
-    if (inputFile == NULL) {
-        printf("Erro ao abrir o arquivo %s.\n", fileName);
-        return;
-    }
-
-    char magicNumber[3];
-    int width, height, maxVal;
-
-    if (!readPGMHeader(inputFile, magicNumber, &width, &height, &maxVal)) {
-        fclose(inputFile);
-        return;
-    }
-
-    int totalPixels = width * height;
-    unsigned char *imageData = (unsigned char *)malloc(totalPixels * sizeof(unsigned char));
-    if (!imageData) {
-        printf("Erro ao alocar memória para os dados da imagem.\n");
-        fclose(inputFile);
-        return;
-    }
-
-    int success = (magicNumber[1] == '5') ? readImageDataP5(inputFile, imageData, totalPixels)
-                                          : readImageDataP2(inputFile, imageData, totalPixels);
-
-    if (success) {
-        calculateLBPHistogram(imageData, lbpHistogram, width, height);
-        saveLBPHistogramToFile(lbpFileName, lbpHistogram); // Salva o histograma no arquivo
-    } else {
-        printf("Erro ao processar a imagem %s.\n", fileName);
-    }
-
-    free(imageData);
-    fclose(inputFile);
-}
 
 
 // Função para salvar a imagem LBP
@@ -257,14 +212,13 @@ void generateLBPImage(const char *inputImageFile, const char *outputFile) {
         }
     }
 
-    // Salva a imagem LBP fora do diretório base
+    // Aqui você pode usar a função saveLBPImage para salvar a imagem LBP no diretório base
     saveLBPImage(outputFile, lbpImage, width, height);
 
     free(imageData);
     free(lbpImage);
     fclose(inputFile);
 }
-
 
 int main(int argc, char *argv[]) {
     if (argc == 5 && strcmp(argv[1], "-d") == 0 && strcmp(argv[3], "-i") == 0) {
@@ -312,23 +266,25 @@ int main(int argc, char *argv[]) {
             printf("Nenhuma imagem similar encontrada.\n");
         }
     } else if (argc == 5 && strcmp(argv[1], "-i") == 0 && strcmp(argv[3], "-o") == 0) {
-    const char *inputImageFile = argv[2];
-    const char *outputFile = argv[4];
+        const char *inputImageFile = argv[2];
+        const char *outputFile = argv[4];
 
-    // Verificar se a imagem de entrada está no diretório base
-    char inputImagePath[512];
-    snprintf(inputImagePath, sizeof(inputImagePath), "./base/%s", inputImageFile);
+        // Verificar se a imagem de entrada está no diretório base
+        char inputImagePath[512];
+        snprintf(inputImagePath, sizeof(inputImagePath), "./base/%s", inputImageFile);
 
-    // Verificar se a imagem de entrada tem a extensão .pgm
-    if (strstr(inputImageFile, ".pgm") == NULL) {
-        printf("A imagem de entrada deve ter a extensão .pgm\n");
-        return 1; // Retorna erro
-    }
+        // Construir o caminho completo para a saída no diretório /base
+        char outputFilePath[512];
+        snprintf(outputFilePath, sizeof(outputFilePath), "./base/%s", outputFile); // Saída também no diretório base
 
-    // Chame a função de geração de imagem LBP
-    generateLBPImage(inputImagePath, outputFile); // Passa o caminho correto
-}
- else {
+        // Verificar se a imagem de entrada tem a extensão .pgm
+        if (strstr(inputImageFile, ".pgm") == NULL) {
+            printf("A imagem de entrada deve ter a extensão .pgm\n");
+            return 1; // Retorna erro
+        }
+
+        generateLBPImage(inputImagePath, outputFilePath); // Passa os caminhos completos
+    } else {
         printf("Uso:\n");
         printf("  ./lbp -d <diretório> -i <imagem de entrada>\n");
         printf("  ./lbp -i <imagem de entrada> -o <imagem de saída>\n");
