@@ -7,10 +7,10 @@ CFLAGS = -Wall -Wextra -O2
 # Nome do executável
 TARGET = lbp
 
-# Arquivos fonte
-SRCS = lbp.c  # Altere para o nome do seu arquivo fonte, se necessário
+# Arquivos fonte (adicione todos os arquivos .c)
+SRCS = LBP.c processamento.c leitura.c operações.c
 
-# Objetos
+# Objetos (serão gerados os .o a partir dos .c)
 OBJS = $(SRCS:.c=.o)
 
 # Regra padrão
@@ -21,7 +21,7 @@ $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
 # Regra para compilar arquivos .c em .o
-%.o: %.c
+%.o: %.c LBP.h
 	$(CC) $(CFLAGS) -c $<
 
 # Limpeza dos arquivos gerados
