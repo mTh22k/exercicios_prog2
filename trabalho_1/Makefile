@@ -5,7 +5,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -O2
 
 # Nome do executável
-TARGET = lbp
+TARGET = LBP
 
 # Arquivos fonte (adicione todos os arquivos .c)
 SRCS = LBP.c processamento.c leitura.c operações.c

@@ -34,6 +34,12 @@ double distancia_euclidiana(double *hist1, double *hist2);
 // Processa a imagem e calcula o histograma LBP
 void processar_imagem(const char *nomeArquivo, double *histogramaLBP);
 
+// auxilia a verificação do arquivo
+int verificar_arquivo_existe(const char *caminho);
+
+// auxilia a extrair o nome do arquivo a partir do caminho completo
+const char *extrair_nome_arquivo(const char *caminho);
+
 // Lista as imagens em um diretório
 void listar_imagem_diretorio(const char *diretorio, char listaImagens[][256], int *contagem);
 

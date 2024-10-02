@@ -43,11 +43,24 @@ void listar_imagem_diretorio(const char *diretorio, char listaImagens[][256], in
     closedir(dir); // Fecha o diretório
 }
 
+// Função auxiliar para verificar se o arquivo existe
+int verificar_arquivo_existe(const char *caminho) {
+    struct stat buffer;
+    return (stat(caminho, &buffer) == 0); // Retorna 1 se o arquivo existir, 0 se não
+}
+
+// Função auxiliar para extrair o nome do arquivo a partir do caminho completo
+const char *extrair_nome_arquivo(const char *caminho) {
+    const char *nomeArquivo = strrchr(caminho, '/');
+    return (nomeArquivo) ? nomeArquivo + 1 : caminho; // Se encontrar '/', retorna o nome, senão retorna o caminho inteiro
+}
+
 // Função para encontrar a imagem mais similar a uma imagem de entrada
-void achar_imagem_similar(const char *diretorio, const char *imagemEntrada) {
-    // Constrói o caminho completo da imagem de entrada
-    char caminhoImagemEntrada[512];
-    snprintf(caminhoImagemEntrada, sizeof(caminhoImagemEntrada), "%s/%s", diretorio, imagemEntrada);
+void achar_imagem_similar(const char *diretorio, const char *caminhoImagemEntrada) {
+    // Verifica se a imagem de entrada existe
+    if (!verificar_arquivo_existe(caminhoImagemEntrada)) {
+        return; // Se a imagem não existe, retorna sem fazer nada
+    }
 
     double histogramaLBPEntrada[LBP_VALUES] = {0}; // Histograma LBP da imagem de entrada
     processar_imagem(caminhoImagemEntrada, histogramaLBPEntrada); // Processa a imagem de entrada
@@ -56,20 +69,22 @@ void achar_imagem_similar(const char *diretorio, const char *imagemEntrada) {
     int contagemImagens = 0; // Contador de imagens
     listar_imagem_diretorio(diretorio, listaImagens, &contagemImagens); // Lista imagens no diretório
 
+    const char *nomeImagemEntrada = extrair_nome_arquivo(caminhoImagemEntrada); // Extrai o nome da imagem de entrada
+
     double distanciaMinima = INFINITY; // Inicializa a distância mínima
     char *imagemMaisSimilar = NULL; // Ponteiro para a imagem mais similar
 
     // Compara a imagem de entrada com as imagens listadas
     for (int i = 0; i < contagemImagens; i++) {
         // Ignora a própria imagem de entrada
-        if (strcmp(listaImagens[i], imagemEntrada) == 0) {
-            continue; // Pula a iteração
+        if (strcmp(listaImagens[i], nomeImagemEntrada) == 0) {
+            continue; // Pula a iteração se for a mesma imagem
         }
 
         char caminhoImagemReferencia[512]; // Caminho da imagem de referência
         // Verifica o comprimento do caminho
         int resultado = snprintf(caminhoImagemReferencia, sizeof(caminhoImagemReferencia), "%s/%s", diretorio, listaImagens[i]);
-        
+
         // Corrige a comparação para evitar o aviso
         if (resultado < 0 || resultado >= (int)sizeof(caminhoImagemReferencia)) {
             fprintf(stderr, "Erro: Caminho da imagem de referência muito longo: %s/%s\n", diretorio, listaImagens[i]);
@@ -90,22 +105,20 @@ void achar_imagem_similar(const char *diretorio, const char *imagemEntrada) {
     }
 
     // Exibe o resultado
-    if (imagemMaisSimilar) {
-        printf("Imagem mais similar: %s %f\n", imagemMaisSimilar,distanciaMinima);
-    } 
+    if (imagemMaisSimilar && distanciaMinima < INFINITY) {
+        printf("Imagem mais similar: %s %f\n", imagemMaisSimilar, distanciaMinima);
+    }
 }
+
+
 
 // Função para verificar a imagem de entrada e gerar uma imagem LBP
 void verificar_pgm(const char *imagemEntrada, const char *imagemSaida) {
-    // Verifica se a imagem de entrada está no diretório base
-    char caminhoImagemEntrada[512];
-    snprintf(caminhoImagemEntrada, sizeof(caminhoImagemEntrada), "./base/%s", imagemEntrada);
-
     // Verifica se a imagem de entrada tem a extensão .pgm
     if (strstr(imagemEntrada, ".pgm") == NULL) {
         return; // Retorna erro se não for .pgm
     }
 
     // Chama a função de geração de imagem LBP
-    gerar_imagem_lbp(caminhoImagemEntrada, imagemSaida); // Passa o caminho correto
+    gerar_imagem_lbp(imagemEntrada, imagemSaida); // Passa o caminho correto
 }

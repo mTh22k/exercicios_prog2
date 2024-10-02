@@ -20,7 +20,6 @@ int main(int argc, char *argv[]) {
 
         // Chama a função para verificar a imagem de entrada e gerar a imagem LBP
         verificar_pgm(imagemEntrada, imagemSaida);
-
     }
 
     return 0; // Retorna 0 para indicar que o programa terminou com sucesso
