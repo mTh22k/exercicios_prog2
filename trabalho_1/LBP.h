@@ -19,7 +19,7 @@ unsigned char calcular_lbp(unsigned char *imagem, int largura, int altura, int x
 // Lê o cabeçalho de uma imagem PGM
 int ler_cabeçalho(FILE *arquivoEntrada, char *numeroMagico, int *largura, int *altura, int *valorMax);
 
-// ignora comentarios na entrada
+// Ignora comentários na entrada
 void ignorar_comentarios(FILE *arquivo);
 
 // Lê a imagem no formato P5 (binário)
@@ -37,10 +37,10 @@ double distancia_euclidiana(double *hist1, double *hist2);
 // Processa a imagem e calcula o histograma LBP
 void processar_imagem(const char *nomeArquivo, double *histogramaLBP);
 
-// auxilia a verificação do arquivo
+// Auxilia a verificação do arquivo
 int verificar_arquivo_existe(const char *caminho);
 
-// auxilia a extrair o nome do arquivo a partir do caminho completo
+// Auxilia a extrair o nome do arquivo a partir do caminho completo
 const char *extrair_nome_arquivo(const char *caminho);
 
 // Lista as imagens em um diretório
@@ -51,6 +51,10 @@ void salvar_arquivo_lbp(const char *nomeArquivo, double *histogramaLBP);
 
 // Carrega o histograma LBP de um arquivo
 int carregar_arquivo_lbp(const char *nomeArquivo, double *histogramaLBP);
+
+// Salva a imagem LBP no formato PGM (P5 e P2)
+void salvar_imagem_p5(const char *nomeArquivo, unsigned char *dadosImagem, int largura, int altura, int valorMaximo);
+void salvar_imagem_p2(const char *nomeArquivo, unsigned char *dadosImagem, int largura, int altura, int valorMaximo);
 
 // Salva a imagem LBP no formato PGM
 void salvar_imagem_lbp(const char *arquivoSaida, unsigned char *imagemLBP, int largura, int altura);

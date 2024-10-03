@@ -7,7 +7,8 @@ unsigned char calcular_lbp(unsigned char *imagem, int largura, int altura, int x
     // Definindo os deslocamentos para os vizinhos
     int deslocamentos[8][2] = {{-1, -1}, {0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}};
     unsigned char centro = imagem[y * largura + x]; // Valor do pixel central
-    unsigned char valorLBP = 0; // Inicializa o valor LBP
+    unsigned char valorLBP = 0; // Inicializa o valor LBP como 0
+    int somatorio = 0; // Variável para armazenar o valor final
 
     // Verifica os 8 vizinhos
     for (int i = 0; i < 8; i++) {
@@ -17,10 +18,15 @@ unsigned char calcular_lbp(unsigned char *imagem, int largura, int altura, int x
         // Verifica se o vizinho está dentro dos limites da imagem
         if (vizinhoX >= 0 && vizinhoX < largura && vizinhoY >= 0 && vizinhoY < altura) {
             unsigned char vizinho = imagem[vizinhoY * largura + vizinhoX]; // Valor do vizinho
-            // Atualiza o valor LBP, configurando o bit correspondente se o vizinho for maior ou igual ao centro
-            valorLBP |= (vizinho >= centro) << i;
+
+            // Se o vizinho for maior ou igual ao centro, atualiza o somatório
+            if (vizinho >= centro) {
+                somatorio += pow(2, i); // Usa potência de 2 para calcular a posição do bit
+            }
         }
     }
+
+    valorLBP = somatorio; // Armazena o valor final calculado
 
     return valorLBP; // Retorna o valor LBP calculado
 }
@@ -98,7 +104,6 @@ void processar_imagem(const char *nomeArquivo, double *histogramaLBP) {
     fclose(arquivoEntrada); // Fecha o arquivo de entrada
 }
 
-// Gera uma imagem LBP a partir de um arquivo de imagem de entrada e salva em um arquivo de saída
 void gerar_imagem_lbp(const char *nomeArquivoEntrada, const char *nomeArquivoSaida) {
     // Abre o arquivo de entrada em modo binário
     FILE *arquivoEntrada = fopen(nomeArquivoEntrada, "rb");
@@ -118,24 +123,61 @@ void gerar_imagem_lbp(const char *nomeArquivoEntrada, const char *nomeArquivoSai
     unsigned char *imagemLBP = (unsigned char *)malloc(totalPixels * sizeof(unsigned char)); // Aloca memória para a imagem LBP
 
     // Lê a imagem dependendo do formato
+    int sucesso = 0;
     if (numeroMagico[1] == '5') {
-        ler_p5(arquivoEntrada, dadosImagem, totalPixels); // Lê imagem P5
+        sucesso = ler_p5(arquivoEntrada, dadosImagem, totalPixels); // Lê imagem P5
     } else if (numeroMagico[1] == '2') {
-        ler_p2(arquivoEntrada, dadosImagem, totalPixels); // Lê imagem P2
+        sucesso = ler_p2(arquivoEntrada, dadosImagem, totalPixels); // Lê imagem P2
     }
 
-    // Calcula LBP para cada pixel e armazena no imagemLBP
+    if (!sucesso) {
+        free(dadosImagem);
+        free(imagemLBP);
+        fclose(arquivoEntrada);
+        return; // Sai se a leitura falhar
+    }
+
+    // Calcula LBP para cada pixel e armazena na imagemLBP
     for (int y = 0; y < altura; y++) {
         for (int x = 0; x < largura; x++) {
             imagemLBP[y * largura + x] = calcular_lbp(dadosImagem, largura, altura, x, y); // Calcula LBP para o pixel
         }
     }
 
-    // Salva a imagem LBP fora do diretório base
-    salvar_imagem_lbp(nomeArquivoSaida, imagemLBP, largura, altura);
+    // Gera o arquivo de saída no mesmo formato do arquivo de entrada
+    if (numeroMagico[1] == '5') {
+        salvar_imagem_p5(nomeArquivoSaida, imagemLBP, largura, altura, valorMaximo); // Salva como P5
+    } else if (numeroMagico[1] == '2') {
+        salvar_imagem_p2(nomeArquivoSaida, imagemLBP, largura, altura, valorMaximo); // Salva como P2
+    }
 
     free(dadosImagem); // Libera a memória alocada para os dados da imagem
     free(imagemLBP); // Libera a memória alocada para a imagem LBP
     fclose(arquivoEntrada); // Fecha o arquivo de entrada
+}
+
+
+// Salva a imagem LBP no formato P5 (binário)
+void salvar_imagem_p5(const char *nomeArquivo, unsigned char *dadosImagem, int largura, int altura, int valorMaximo) {
+    FILE *arquivoSaida = fopen(nomeArquivo, "wb");
+    if (arquivoSaida == NULL) return;
+
+    fprintf(arquivoSaida, "P5\n%d %d\n%d\n", largura, altura, valorMaximo);
+    fwrite(dadosImagem, sizeof(unsigned char), largura * altura, arquivoSaida);
+
+    fclose(arquivoSaida);
+}
+
+// Salva a imagem LBP no formato P2 (texto)
+void salvar_imagem_p2(const char *nomeArquivo, unsigned char *dadosImagem, int largura, int altura, int valorMaximo) {
+    FILE *arquivoSaida = fopen(nomeArquivo, "w");
+    if (arquivoSaida == NULL) return;
+
+    fprintf(arquivoSaida, "P2\n%d %d\n%d\n", largura, altura, valorMaximo);
+    for (int i = 0; i < largura * altura; i++) {
+        fprintf(arquivoSaida, "%d ", dadosImagem[i]);
+    }
+
+    fclose(arquivoSaida);
 }
 
