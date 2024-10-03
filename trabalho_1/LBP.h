@@ -19,6 +19,9 @@ unsigned char calcular_lbp(unsigned char *imagem, int largura, int altura, int x
 // Lê o cabeçalho de uma imagem PGM
 int ler_cabeçalho(FILE *arquivoEntrada, char *numeroMagico, int *largura, int *altura, int *valorMax);
 
+// ignora comentarios na entrada
+void ignorar_comentarios(FILE *arquivo);
+
 // Lê a imagem no formato P5 (binário)
 int ler_p5(FILE *arquivoEntrada, unsigned char *dadosImagem, size_t totalPixels);
 
