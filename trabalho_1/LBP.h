@@ -56,9 +56,6 @@ int carregar_arquivo_lbp(const char *nomeArquivo, double *histogramaLBP);
 void salvar_imagem_p5(const char *nomeArquivo, unsigned char *dadosImagem, int largura, int altura, int valorMaximo);
 void salvar_imagem_p2(const char *nomeArquivo, unsigned char *dadosImagem, int largura, int altura, int valorMaximo);
 
-// Salva a imagem LBP no formato PGM
-void salvar_imagem_lbp(const char *arquivoSaida, unsigned char *imagemLBP, int largura, int altura);
-
 // Gera uma imagem LBP a partir de uma imagem de entrada
 void gerar_imagem_lbp(const char *imagemEntrada, const char *arquivoSaida);
 
