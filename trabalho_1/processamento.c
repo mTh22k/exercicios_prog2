@@ -81,7 +81,12 @@ double distancia_euclidiana(double *hist1, double *hist2)
 void processar_imagem(const char *nomeArquivo, double *histogramaLBP)
 {
     char nomeArquivoLBP[512];
+    memset(nomeArquivoLBP, 0, sizeof(nomeArquivoLBP)); // Limpa o buffer
     snprintf(nomeArquivoLBP, sizeof(nomeArquivoLBP), "%s.lbp", nomeArquivo);
+
+    // Cria uma cópia segura do nome do arquivo LBP
+    char backupNomeArquivoLBP[512];
+    strcpy(backupNomeArquivoLBP, nomeArquivoLBP);
 
     // Tenta carregar o histograma LBP do arquivo
     if (carregar_arquivo_lbp(nomeArquivoLBP, histogramaLBP))
@@ -91,7 +96,6 @@ void processar_imagem(const char *nomeArquivo, double *histogramaLBP)
 
     // Caso contrário, lê a imagem e calcula o histograma LBP
     FILE *arquivoEntrada = fopen(nomeArquivo, "rb");
-
     if (arquivoEntrada == NULL)
     {
         return;
@@ -111,7 +115,6 @@ void processar_imagem(const char *nomeArquivo, double *histogramaLBP)
 
     // Aloca memória para os dados da imagem
     unsigned char *dadosImagem = (unsigned char *)malloc(totalPixels * sizeof(unsigned char));
-
     if (!dadosImagem)
     {
         fclose(arquivoEntrada);
@@ -120,10 +123,16 @@ void processar_imagem(const char *nomeArquivo, double *histogramaLBP)
 
     // Lê a imagem dependendo do formato
     int sucesso = (numeroMagico[1] == '5') ? ler_p5(arquivoEntrada, dadosImagem, totalPixels) : ler_p2(arquivoEntrada, dadosImagem, totalPixels);
-
     if (sucesso)
     {
+
         calcular_histograma(dadosImagem, histogramaLBP, largura, altura);
+
+        // Verifica se o nome do arquivo foi corrompido e restaura
+        if (strcmp(nomeArquivoLBP, backupNomeArquivoLBP) != 0)
+        {
+            strcpy(nomeArquivoLBP, backupNomeArquivoLBP);
+        }
 
         // Salva o histograma no arquivo
         salvar_arquivo_lbp(nomeArquivoLBP, histogramaLBP);
